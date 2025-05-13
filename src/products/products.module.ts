@@ -9,10 +9,7 @@ import { AuthModule } from 'src/auth/auth.module';
 @Module({
   imports: [AuthModule],
   controllers: [ProductsController],
-  providers: [
-    ProductsService,
-    tenantModels.productModel,
-  ],
+  providers: [ProductsService, tenantModels.productModel],
 })
 export class ProductsModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
