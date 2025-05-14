@@ -11,6 +11,7 @@ export const tenantConnectionProvider = {
         'Make sure to apply tenantsMiddleware',
       );
     }
+    console.log(connection.useDb(`tenant_${request.tenantId}`));
     return connection.useDb(`tenant_${request.tenantId}`);
   },
   inject: [REQUEST, getConnectionToken()],

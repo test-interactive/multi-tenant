@@ -6,6 +6,7 @@ import { tenantConnectionProvider } from 'src/providers/tenant-connection.provid
 import { UsersModule } from 'src/users/users.module';
 import { TenantsController } from './tenants.controller';
 import { AuthModule } from 'src/auth/auth.module';
+import { TenantConnectionService } from 'src/services/tenant-connection.service';
 
 @Global()
 @Module({
@@ -20,7 +21,11 @@ import { AuthModule } from 'src/auth/auth.module';
     ]),
   ],
   controllers: [TenantsController],
-  providers: [TenantsService, tenantConnectionProvider],
-  exports: [TenantsService, tenantConnectionProvider],
+  providers: [
+    TenantsService,
+    tenantConnectionProvider,
+    TenantConnectionService,
+  ],
+  exports: [TenantsService, tenantConnectionProvider, TenantConnectionService],
 })
 export class TenantsModule {}

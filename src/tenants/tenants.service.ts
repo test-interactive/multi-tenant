@@ -55,6 +55,8 @@ import CreateCompanyDto from './create-company.dto';
 import { UsersService } from 'src/users/users.service';
 import { nanoid } from 'nanoid';
 import { AuthService } from 'src/auth/auth.service';
+import { TenantConnectionService } from 'src/services/tenant-connection.service';
+import { Employee, EmployeeSchema } from 'src/employee/employee.schema';
 
 @Injectable()
 export class TenantsService {
@@ -63,6 +65,7 @@ export class TenantsService {
     private TenantModel: Model<Tenant>,
     private usersService: UsersService,
     private authService: AuthService,
+    private tenantConnectionService: TenantConnectionService,
   ) {}
 
   async getTenantById(tenantId: string) {
@@ -71,6 +74,10 @@ export class TenantsService {
       throw new NotFoundException('Tenant not found');
     }
     return tenant;
+  }
+
+  async getTenantByUserEmail(email: string) {
+    return this.TenantModel.findOne({ email });
   }
 
   async getAllTenants() {
@@ -92,13 +99,28 @@ export class TenantsService {
 
     // Create new user (tenant admin)
     await this.usersService.createUser(companyData.user, tenantId);
-
+    await this.initializeTenantDatabase(tenantId);
     // Create Tenant Record with active status
     return this.TenantModel.create({
       companyName: companyData.companyName,
       tenantId,
       isActive: true,
     });
+  }
+
+  private async initializeTenantDatabase(tenantId: string) {
+    // Initialize the Employee collection in the tenant database
+    const EmployeeModel = await this.tenantConnectionService.getTenantModel(
+      { name: Employee.name, schema: EmployeeSchema },
+      tenantId,
+    );
+
+    // Explicitly create the collection (not always necessary but ensures collection exists)
+    await EmployeeModel.createCollection();
+
+    // Add more collections as needed for the tenant
+
+    console.log(`Initialized database for tenant: ${tenantId}`);
   }
 
   async deactivateTenant(tenantId: string) {

@@ -6,21 +6,30 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Employee } from './employee.schema';
+import { Employee, EmployeeSchema } from './employee.schema';
 import EmployeeDto from './employee.dto';
+import { TenantConnectionService } from 'src/services/tenant-connection.service';
 
 @Injectable()
 export class EmployeesService {
   constructor(
-    @InjectModel(Employee.name) private employeeModel: Model<Employee>,
+    private tenantConnectionService: TenantConnectionService, // @InjectModel(Employee.name) private employeeModel: Model<Employee>,
   ) {}
+  private async getEmployeeModel(tenantId: string): Promise<Model<Employee>> {
+    return this.tenantConnectionService.getTenantModel(
+      { name: Employee.name, schema: EmployeeSchema },
+      tenantId,
+    );
+  }
 
   async getEmployeesByTenantId(tenantId: string) {
-    return this.employeeModel.find({ tenantId });
+    const EmployeeModel = await this.getEmployeeModel(tenantId);
+    return EmployeeModel.find({ tenantId });
   }
 
   async getEmployeeById(id: string, tenantId: string) {
-    const employee = await this.employeeModel.findById(id);
+    const EmployeeModel = await this.getEmployeeModel(tenantId);
+    const employee = await EmployeeModel.findById(id);
 
     if (!employee) {
       throw new NotFoundException('Employee not found');
@@ -38,7 +47,8 @@ export class EmployeesService {
 
   async createEmployee(employeeDto: EmployeeDto, tenantId: string) {
     // Check if employee with same email already exists for this tenant
-    const existingEmployee = await this.employeeModel.findOne({
+    const EmployeeModel = await this.getEmployeeModel(tenantId);
+    const existingEmployee = await EmployeeModel.findOne({
       email: employeeDto.email,
       tenantId,
     });
@@ -47,7 +57,7 @@ export class EmployeesService {
       throw new ConflictException('Employee with this email already exists');
     }
 
-    return this.employeeModel.create({
+    return EmployeeModel.create({
       ...employeeDto,
       tenantId,
       isActive: true,
@@ -55,11 +65,12 @@ export class EmployeesService {
   }
 
   async updateEmployee(id: string, employeeDto: EmployeeDto, tenantId: string) {
+    const EmployeeModel = await this.getEmployeeModel(tenantId);
     // First check if employee exists and belongs to this tenant
     await this.getEmployeeById(id, tenantId);
 
     // Check if trying to update to an email that already exists
-    const existingEmployee = await this.employeeModel.findOne({
+    const existingEmployee = await EmployeeModel.findOne({
       email: employeeDto.email,
       tenantId,
       _id: { $ne: id }, // Exclude current employee from check
@@ -72,7 +83,7 @@ export class EmployeesService {
     }
 
     // Update the employee
-    const updatedEmployee = await this.employeeModel.findByIdAndUpdate(
+    const updatedEmployee = await EmployeeModel.findByIdAndUpdate(
       id,
       { ...employeeDto },
       { new: true },
@@ -83,10 +94,11 @@ export class EmployeesService {
 
   async deleteEmployee(id: string, tenantId: string) {
     // First check if employee exists and belongs to this tenant
+    const EmployeeModel = await this.getEmployeeModel(tenantId);
     await this.getEmployeeById(id, tenantId);
 
     // Delete the employee
-    await this.employeeModel.findByIdAndDelete(id);
+    await EmployeeModel.findByIdAndDelete(id);
 
     return {
       message: 'Employee deleted successfully',
@@ -96,10 +108,11 @@ export class EmployeesService {
 
   async deactivateEmployee(id: string, tenantId: string) {
     // First check if employee exists and belongs to this tenant
+    const EmployeeModel = await this.getEmployeeModel(tenantId);
     await this.getEmployeeById(id, tenantId);
 
     // Deactivate the employee
-    const updatedEmployee = await this.employeeModel.findByIdAndUpdate(
+    const updatedEmployee = await EmployeeModel.findByIdAndUpdate(
       id,
       { isActive: false },
       { new: true },
@@ -110,10 +123,11 @@ export class EmployeesService {
 
   async activateEmployee(id: string, tenantId: string) {
     // First check if employee exists and belongs to this tenant
+    const EmployeeModel = await this.getEmployeeModel(tenantId);
     await this.getEmployeeById(id, tenantId);
 
     // Activate the employee
-    const updatedEmployee = await this.employeeModel.findByIdAndUpdate(
+    const updatedEmployee = await EmployeeModel.findByIdAndUpdate(
       id,
       { isActive: true },
       { new: true },

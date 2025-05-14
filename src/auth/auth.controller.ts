@@ -39,12 +39,12 @@ export class AuthController {
     return this.authService.superAdminLogin(credentials);
   }
 
-  @UseGuards(TenantAuthenticationGuard)
-  @Post('logout')
-  async logout(@Req() req) {
-    // In JWT-based auth, logout is typically handled on client-side
-    // by removing the token, but we can implement token blacklisting
-    // for additional security
-    return this.authService.logout(req.userInfo.id);
-  }
+  // @UseGuards(TenantAuthenticationGuard)
+  // @Post('logout')
+  // async logout(@Req() req) {
+  //   // In JWT-based auth, logout is typically handled on client-side
+  //   // by removing the token, but we can implement token blacklisting
+  //   // for additional security
+  //   return this.authService.logout(req.userInfo.id);
+  // }
 }
